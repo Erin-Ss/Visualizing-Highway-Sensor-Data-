@@ -14,10 +14,13 @@ from streamz.dataframe import PeriodicDataFrame
 
 def sensor_data(sensor):
     df=pd.read_csv('getdata7.csv')
-    return (df.loc[df['DetectorID']=='112_2_44']).set_index('DateTimeStamp')
+    return (df.loc[df['DetectorID']==sensor]).set_index('DateTimeStamp')
+
+
+sensor = '112_2_44'
 
 def streaming_sensor_data(**kwargs):
-    df = sensor_data('112_2_44')
+    df = sensor_data(sensor)
     df['DateTimeStamp'] = [pd.Timestamp.now()]
     print(df)
     return df.set_index('DateTimeStamp')
@@ -26,13 +29,12 @@ def streaming_sensor_data(**kwargs):
 df = PeriodicDataFrame(streaming_sensor_data, interval='20s')
 
 pn_realtime = pn.Column(
-    pn.Row(
-      df[['Occupancy']].hvplot.line(title='Occupancy', backlog=1000),
-      df[['Volume']].hvplot.line(title='Volume', backlog=1000)),
-  df[['Speed']].hvplot.line(title='Speed', backlog=1000)
+    df[['Occupancy']].hvplot.line(title='Occupancy', backlog=1000),
+    df[['Volume']].hvplot.line(title='Volume', backlog=1000),
+    df[['Speed']].hvplot.line(title='Speed', backlog=1000)
 )
 
-sensor = '112_2_44'
+# sensor = '112_2_44'
 
 def sensor_plot(col, sensor = sensor):
     df = sensor_data(sensor)
@@ -59,9 +61,9 @@ pn_sensor = pn.Column(
        sensor_dashboard.get_plot, width=400
 )
 
-pane = pn.Tabs(
-    ('Real Time', pn_realtime),
-    ('Refresh Sensor Dashboard', pn_sensor)
-    ).servable()
+gspec = pn.GridSpec(sizing_mode='stretch_both', max_height=800)
 
-pane
+gspec[0, 0] = pn_realtime
+gspec[0, 1] = pn_sensor
+
+gspec.servable()
